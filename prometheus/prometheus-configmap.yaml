@@ -17,4 +17,4 @@ data:
       - job_name: 'flask-app'           # Job 2 — Prometheus monitors your Flask app
         metrics_path: /metrics          # Hits the /metrics endpoint on your Flask app
         static_configs:
-          - targets: ['34.42.228.136:5000']  # Your Flask app's external IP and port
+          - targets: ['35.202.160.98:5000']  # Your Flask app's external IP and port
