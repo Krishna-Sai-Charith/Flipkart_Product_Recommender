@@ -1,0 +1,36 @@
+apiVersion: apps/v1       # Use the apps/v1 API (required for Deployments)
+kind: Deployment          # This resource will manage pod replicas
+metadata:
+  name: grafana           # Name of this Deployment
+  namespace: monitoring   # Same namespace as Prometheus (they need to talk to each other)
+spec:
+  replicas: 1             # Run exactly 1 Grafana pod at all times
+  selector:
+    matchLabels:
+      app: grafana        # This Deployment manages pods with label "app: grafana"
+  template:
+    metadata:
+      labels:
+        app: grafana      # Every pod created gets this label (must match selector above)
+    spec:
+      containers:
+        - name: grafana             # Name of the container inside the pod
+          image: grafana/grafana    # Official Grafana image pulled from Docker Hub
+          ports:
+            - containerPort: 3000   # Grafana listens on port 3000 inside the container
+                                    # (no config volume needed — Grafana is configured via UI)
+---
+apiVersion: v1                  # Core API group
+kind: Service                   # Exposes Grafana pod to network traffic
+metadata:
+  name: grafana-service         # Name of this Service
+  namespace: monitoring         # Same namespace as the Deployment
+spec:
+  selector:
+    app: grafana                # Routes traffic to pods with label "app: grafana"
+  ports:
+    - protocol: TCP             # Use TCP protocol
+      port: 3000                # Internal cluster port
+      targetPort: 3000          # Forwards to containerPort 3000 on the pod
+      nodePort: 32000           # External port — access Grafana at <NodeIP>:32000
+  type: NodePort                # Exposes service on every node's IP externally

@@ -1,0 +1,20 @@
+apiVersion: v1          # Core API group (used for ConfigMaps, Services, etc.)
+kind: ConfigMap         # Stores config data as key-value pairs (injected into containers)
+metadata:
+  name: prometheus-config   # Must match the configMap.name in the Deployment's volume
+  namespace: monitoring     # Same namespace as the Deployment
+data:
+  prometheus.yml: |         # Key is the filename, "|" means multi-line string below
+    global:
+      scrape_interval: 15s  # Prometheus scrapes (collects) metrics every 15 seconds
+
+    scrape_configs:                     # List of targets Prometheus will monitor
+
+      - job_name: 'prometheus'          # Job 1 — Prometheus monitors ITSELF
+        static_configs:
+          - targets: ['localhost:9090'] # Scrapes its own metrics at localhost:9090
+
+      - job_name: 'flask-app'           # Job 2 — Prometheus monitors your Flask app
+        metrics_path: /metrics          # Hits the /metrics endpoint on your Flask app
+        static_configs:
+          - targets: ['34.42.228.136:5000']  # Your Flask app's external IP and port

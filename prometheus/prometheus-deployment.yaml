@@ -1,0 +1,44 @@
+apiVersion: apps/v1         # Use the apps/v1 API (required for Deployments)
+kind: Deployment            # This resource will manage pod replicas
+metadata:
+  name: prometheus          # Name of this Deployment
+  namespace: monitoring     # Isolated in the "monitoring" namespace
+spec:
+  replicas: 1               # Run exactly 1 pod at all times
+  selector:
+    matchLabels:
+      app: prometheus       # This Deployment manages pods with label "app: prometheus"
+  template:
+    metadata:
+      labels:
+        app: prometheus     # Every pod created gets this label (must match selector above)
+    spec:
+      containers:
+        - name: prometheus                  # Name of the container inside the pod
+          image: prom/prometheus            # Docker image pulled from Docker Hub
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"  # Tell Prometheus where to find its config
+          ports:
+            - containerPort: 9090           # Prometheus listens on port 9090 inside the container
+          volumeMounts:
+            - name: config-volume           # Reference the volume defined below
+              mountPath: /etc/prometheus    # Mount it at this path inside the container
+      volumes:
+        - name: config-volume              # Volume name (must match volumeMounts.name above)
+          configMap:
+            name: prometheus-config        # Read content from a ConfigMap named "prometheus-config"
+---
+apiVersion: v1              # Core API group (used for Services, ConfigMaps, etc.)
+kind: Service               # This resource exposes the Prometheus pod to network traffic
+metadata:
+  name: prometheus-service  # Name of this Service
+  namespace: monitoring     # Must be in the same namespace as the Deployment
+spec:
+  selector:
+    app: prometheus         # Routes traffic to pods with label "app: prometheus"
+  ports:
+    - protocol: TCP         # Use TCP protocol
+      port: 9090            # Port exposed inside the cluster (other services use this)
+      targetPort: 9090      # Forwards to containerPort 9090 on the pod
+      nodePort: 32001       # External port — access Prometheus at <NodeIP>:32001
+  type: NodePort            # Exposes the service on every node's IP externally

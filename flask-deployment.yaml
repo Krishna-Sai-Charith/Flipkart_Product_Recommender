@@ -1,0 +1,39 @@
+apiVersion: apps/v1       # Use the apps/v1 API (required for Deployments)
+kind: Deployment          # This resource will manage pod replicas
+metadata:
+  name: flask-app         # Name of this Deployment
+  labels:
+    app: flask            # Label on the Deployment itself (good for organizing resources)
+spec:
+  replicas: 1             # Run exactly 1 pod at all times
+  selector:
+    matchLabels:
+      app: flask          # This Deployment manages pods with label "app: flask"
+  template:
+    metadata:
+      labels:
+        app: flask        # Every pod created gets this label (must match selector above)
+    spec:
+      containers:
+      - name: flask-container         # Name of the container inside the pod
+        image: flask-app:latest       # Uses local Docker image named "flask-app:latest"
+        imagePullPolicy: IfNotPresent # Use local image if it exists, don't pull from registry
+        ports:
+          - containerPort: 5000       # Flask app listens on port 5000 inside the container
+        envFrom:
+          - secretRef:
+              name: llmops-secrets    # Injects ALL key-value pairs from this Secret as env variables
+                                      # (e.g. API keys, DB passwords — stored securely in K8s Secret)
+---
+apiVersion: v1            # Core API group (used for Services, ConfigMaps, etc.)
+kind: Service             # This resource exposes the Flask pod to network traffic
+metadata:
+  name: flask-service     # Name of this Service
+spec:
+  type: LoadBalancer      # Provisions an external cloud load balancer (gives a public IP)
+  selector:
+    app: flask            # Routes traffic to pods with label "app: flask"
+  ports:
+    - protocol: TCP       # Use TCP protocol
+      port: 80            # External port — users hit your app at <ExternalIP>:80
+      targetPort: 5000    # Forwards traffic to containerPort 5000 on the pod
